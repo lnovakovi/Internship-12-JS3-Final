@@ -10,8 +10,9 @@ const loginForm = `<h1>Sign in</h1>
 <form>
 <input id="name" type ="text" name="username" placeholder="Username" maxlength="10" required>
 <input id="password" type="password" name="password" placeholder="Password" maxlength="10" required>
-<input type="submit" id="btnSubmitLogin" name="signUp-button" maxlength="10" value="Sign up"/>
+<input type="submit" id="btnSubmitLogin" name="signUp-button" maxlength="10" value="Sign in"/>
 </form>`;
+var modal = document.querySelector(".modal");
 
 makeForm();
 function makeForm(){
@@ -52,13 +53,11 @@ function addClikcEventLogin(){
         } 
     });
 }
-
 function openMainPage(){
     let registrationBox = document.querySelector("#registration-box");
     registrationBox.style.display="none";
     getUsers();   
 };
-
 function getUsers(){
      fetch("https://jsonplaceholder.typicode.com/users")
     .then(data => {
@@ -67,66 +66,66 @@ function getUsers(){
     .then(result => {
         users = result;
         showUsers(users);
-        usersArray = document.querySelectorAll(".users__item");
-        postsArray = document.querySelectorAll(".userPopout")
     })
     .catch(err => console.log(err));
 };
-
 function showUsers(users){
     let mainItems = document.querySelector(".main__offers");
     users.forEach(user => {
         mainItems.innerHTML+=`<div class="users__item">
         <img class="item__img" src="./assets/images/user.png" alt="User image" />
-        <button class="userPopout">Open posts</button>
+        <button class="user-posts">Open posts</button>
+        <button class="user-new-post">Add post </button>
         <p class="item__title">${user.name}</p>
         <p class="item__paragraph">Email: ${user.email}<br>
         City: ${user.address.city}</p>
        </div>`;
     });  
     addClickOnImages();
+    addClickOnButtonsForPosts();
+    addClickOnAddPostButtons();
 };
-
 function checkInputFields(){
     let username = document.getElementById("name").value;
     let password= document.getElementById("password").value;
     let confirmedPassword = document.getElementById("password-confirm").value;    
     return username.length >= 5 && username.length <= 10 && password.length >= 5 && password.length <= 10 && password === confirmedPassword;
 };
-
 function saveToLocalStorage(){
     let username = document.getElementById("name").value;
     let password= document.getElementById("password").value;
     let userToSave = JSON.stringify({username: username, password:password});
     localStorage.setItem("user",userToSave);
 };
-
 function checkLocalStorage(){
     return localStorage.length > 0; // return false if empty
 };
-
 function checkLogIn(user){
     let username = document.getElementById("name").value;
     let password= document.getElementById("password").value;
     return user.username == username && user.password == password;
 };
-// get users posts
-/*
-function getPosts(){
-    fetch("https://jsonplaceholder.typicode.com/posts")
-    .then(data =>{
-        return data.JSON(); // parse
-    })
-    then(res=>{
-        //using data 
-    })
-    .catch(err => console.log(err)); // in case error happens
-};*/
-
 function addClickOnImages(){
     let usersImages= document.querySelectorAll(".item__img");
     usersImages.forEach((element,index) => {
-        element.addEventListener("click",getInfo(index));
+        element.addEventListener("click",function(){
+            getInfo(index)});
+    });
+};
+function addClickOnButtonsForPosts(){
+    let postButtons= document.querySelectorAll(".user-posts");
+    postButtons.forEach( (element,index)=>{
+        element.addEventListener("click",function(){
+            getPosts(index);
+        })
+    });
+};
+function addClickOnAddPostButtons(){
+    let addPostButtons = document.querySelectorAll(".user-new-post");
+    addPostButtons.forEach((element,index)=>{
+        element.addEventListener("click",function(){
+            createPost(index);
+        });
     });
 };
 //get posts
@@ -137,10 +136,10 @@ function getInfo(index){
     .then(result => {
         openInfo(result);
     })
+    .catch(err => console.log(err));
 };
 
 function openInfo(result){
-    let modal = document.querySelector(".modal");
     modal.innerHTML += `
     <div class="modal-content">
     <span class="close">&times;</span>
@@ -164,31 +163,95 @@ function openInfo(result){
     <p>Company bs: ${result.company.bs}</p>
     </div> `;
     modal.style.display="block";
+    closeModal();  
+};
+window.onscroll = function(){
+    scrollFunction();
+};
+
+function scrollFunction(){
+    if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+        document.getElementById("myBtn").style.display = "block";
+      } else {
+        document.getElementById("myBtn").style.display = "none";
+      }
+};
+
+function topFunction(){
+    document.body.scrollTop=0;
+    document.documentElement.scrollTop=0;
+}
+
+// get users posts
+function getPosts(userid){
+    fetch(`https://jsonplaceholder.typicode.com/users/1/posts?userId=${userid+1}`)
+    .then(data =>{
+        return data.json(); // parse
+    })
+    .then(result=>{
+        openPosts(result,userid);
+    })
+    .catch(err => console.log(err)); // in case error happens
+};
+function openPosts(result,id){
+    let modal = document.querySelector(".modal");
+    modal.innerHTML += `<div class="modal-content">
+        <span class="close">&times;</span>
+        <h2> User ID: ${id+1}</h2>
+        </div>`;
+    result.forEach(element => {
+        modal.querySelector(".modal-content").innerHTML +=`
+        <h3> Title: ${element.title}</h3>
+        <p>Post id: ${element.id}</p>
+        <p>${element.body}</p>
+        <br>`;
+    });    
+    modal.style.display="block";
+    closeModal();
+};
+
+function closeModal(){
     modal.querySelector(".close").addEventListener("click",function(){
         modal.style.display="none";
         modal.innerHTML="";
-    });   
+    }); 
 };
-/*
-// post object to save
-let postParams={
-    method: "POST",
+function createPost(id){
+    modal.innerHTML += `<div class="modal-content">
+    <h2>Create new post for user id: ${id+1} </h2>
+    <span class="close">&times;</span>
+    <br>
+    <form>
+    <input type="text" id="title" minLength="1" placeholder ="Enter title" required>
+    <input type="text" height="100px" id="post" minLength="1" placeholder ="Enter text" required>
+    <input type="submit" id="btnSubmitPost" name="signUp-button" value="SUBMIT"/>
+    </form>
+    </div>`;
+    modal.style.display="block";
+    let title = document.getElementById("title");
+    let post = document.getElementById("post");
+    closeModal();
+    modal.querySelector("#btnSubmitPost").addEventListener("click",function(){
+        event.preventDefault();
+        addPost(title.value,post.value, id)
+         modal.style.display="none";
+         modal.innerHTML="";
+    
+    });
+};
+
+function addPost(title,post,id){
+    fetch('https://jsonplaceholder.typicode.com/posts', {
+    method: 'POST',
     body: JSON.stringify({
-        //ono sto spremamo
-        title: "neki naslov",
-        body:"teskt post",
-        userId: "id usera"
-    })
-};
-
-//make new user post
-function setPosts(){
-    fetch("https://jsonplaceholder.typicode.com/posts",postParams)
-    .then(data =>{
-        return data.JSON();
-    })
-    then(res=>{
-
-    })
-    .catch(err => console.log(err));
-};*/
+        title: title,
+        body: post,
+        userId: id
+    }),
+    headers: {
+      "Content-type": "application/json; charset=UTF-8"
+    }
+  })
+  .then(response => response.json())
+  .then(alert("successfully created post")) 
+}
